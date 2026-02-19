@@ -985,7 +985,7 @@ function renderEscort(){
   const dates=getMonthDates(AM);
   const staffMembers=(SD(AH).members||[]);
 
-  // Build monthly table
+  // Build mobile-friendly cards
   const rows=dates.map(date=>{
     const[dy,dm,dd]=date.split("-").map(Number);
     const d=new Date(dy,dm-1,dd);
@@ -993,31 +993,29 @@ function renderEscort(){
     const dayName=ESCORT_DAYS[dow]||"";
     const dateLabel=`${dd}/${dm}`;
 
-    const cells=ESCORT_TIMES.map(time=>{
-      return ESCORT_SLOTS.map(slot=>{
+    const timeBlocks=ESCORT_TIMES.map(time=>{
+      const isMorning=time==="בוקר";
+      const slots=ESCORT_SLOTS.map(slot=>{
         const key=`${date}_${time}_${slot}`;
         const val=assignments[key]||"";
-        return `<td style="padding:5px 7px;border:1px solid #e5e7eb;font-size:11px;min-width:70px;text-align:center;background:${val?"#f0fdf4":"#fff"}">
-          <div style="font-size:10px;color:#888;margin-bottom:2px">${slot}</div>
-          <div style="font-weight:600;color:${val?house.color:"#ccc"}">${val||"—"}</div>
-        </td>`;
+        return `<div style="flex:1;min-width:0;padding:6px 8px;background:${val?(isMorning?"#f0fdf4":"#fffbeb"):"#f9fafb"};border-radius:8px;text-align:center">
+          <div style="font-size:10px;color:#888;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${slot}</div>
+          <div style="font-size:12px;font-weight:700;color:${val?(isMorning?house.color:"#d97706"):"#bbb"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${val||"פנוי"}</div>
+        </div>`;
       }).join("");
+      return `<div style="margin-bottom:6px">
+        <div style="font-size:10px;font-weight:700;color:${isMorning?"#667eea":"#f59e0b"};margin-bottom:4px">${isMorning?"🌅 בוקר":"🌤️ צהריים"}</div>
+        <div style="display:flex;gap:5px">${slots}</div>
+      </div>`;
     }).join("");
 
-    return `<tr>
-      <td style="padding:6px 10px;border:1px solid #e5e7eb;font-size:12px;font-weight:700;white-space:nowrap;background:#fafafa">${dayName} ${dateLabel}</td>
-      <td colspan="3" style="padding:0;border:1px solid #e5e7eb">
-        <table style="width:100%;border-collapse:collapse">
-          <tr><td colspan="3" style="padding:3px 7px;font-size:10px;font-weight:700;color:#667eea;background:#f0f4ff;border-bottom:1px solid #e5e7eb">🌅 בוקר</td></tr>
-          <tr>${ESCORT_SLOTS.map(slot=>{const key=`${date}_בוקר_${slot}`;const val=assignments[key]||"";return`<td style="padding:5px 7px;border-left:1px solid #e5e7eb;font-size:11px;min-width:80px;text-align:center;background:${val?"#f0fdf4":"#fff"}"><div style="font-size:10px;color:#888;margin-bottom:1px">${slot}</div><div style="font-weight:600;color:${val?house.color:"#bbb"}">${val||"פנוי"}</div></td>`}).join("")}</tr>
-          <tr><td colspan="3" style="padding:3px 7px;font-size:10px;font-weight:700;color:#f59e0b;background:#fffbeb;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb">🌤️ צהריים</td></tr>
-          <tr>${ESCORT_SLOTS.map(slot=>{const key=`${date}_צהריים_${slot}`;const val=assignments[key]||"";return`<td style="padding:5px 7px;border-left:1px solid #e5e7eb;font-size:11px;min-width:80px;text-align:center;background:${val?"#fffbeb":"#fff"}"><div style="font-size:10px;color:#888;margin-bottom:1px">${slot}</div><div style="font-weight:600;color:${val?"#d97706":"#bbb"}">${val||"פנוי"}</div></td>`}).join("")}</tr>
-        </table>
-      </td>
-      <td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center">
-        <button class="editEscBtn btn" data-date="${date}" style="padding:4px 10px;background:${house.color};color:#fff;font-size:11px">✏️</button>
-      </td>
-    </tr>`;
+    return `<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.07)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:800;color:${house.color}">${dayName} ${dateLabel}</div>
+        <button class="editEscBtn btn" data-date="${date}" style="padding:6px 14px;background:${house.color};color:#fff;font-size:12px;border-radius:8px">✏️ עריכה</button>
+      </div>
+      ${timeBlocks}
+    </div>`;
   }).join("");
 
   document.getElementById("main").innerHTML=`
@@ -1029,18 +1027,7 @@ function renderEscort(){
       <span style="font-weight:700;font-size:14px;flex:1;text-align:center">${mLabel(AM)}</span>
       <button id="nextEM" style="background:none;border:none;font-size:16px;cursor:pointer;color:${house.color}">▶</button>
     </div>
-    <div style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.07)">
-        <thead>
-          <tr style="background:${house.bg}">
-            <th style="padding:10px 12px;text-align:right;font-size:12px;font-weight:700;color:${house.color};border:1px solid #e5e7eb">תאריך</th>
-            <th style="padding:10px 12px;text-align:center;font-size:12px;font-weight:700;color:${house.color};border:1px solid #e5e7eb">הסעות</th>
-            <th style="padding:10px 12px;text-align:center;font-size:12px;font-weight:700;color:${house.color};border:1px solid #e5e7eb;width:60px">עריכה</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
+    <div style="padding:0 2px">${rows}</div>`;
 
   document.getElementById("prevEM")?.addEventListener("click",()=>{const[y,m]=AM.split("-").map(Number);const d=new Date(y,m-2,1);AM=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;renderEscort()});
   document.getElementById("nextEM")?.addEventListener("click",()=>{const[y,m]=AM.split("-").map(Number);const d=new Date(y,m,1);AM=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;renderEscort()});
@@ -1062,9 +1049,13 @@ function openEscortModal(date){
       ${ESCORT_SLOTS.map(slot=>{
         const key=`${date}_${time}_${slot}`;
         const val=assignments[key]||"";
+        const opts=staffMembers.map(m=>`<option value="${m}" ${val===m?"selected":""}>${m}</option>`).join("");
         return`<div style="margin-bottom:8px">
-          <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">🚌 ${slot}</label>
-          <input class="input escInput" data-key="${key}" list="escStaffList" value="${val}" placeholder="שם המלווה" style="font-size:12px;padding:7px 9px"/>
+          <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px">🚌 ${slot}</label>
+          <select class="input escInput" data-key="${key}" style="font-size:14px;padding:9px 10px;width:100%;border:1.5px solid #e5e7eb;border-radius:8px;background:#fff;-webkit-appearance:auto">
+            <option value="">— בחר מלווה —</option>
+            ${opts}
+          </select>
         </div>`;
       }).join("")}
     </div>`).join("");
@@ -1074,7 +1065,7 @@ function openEscortModal(date){
       <h2 style="margin:0;font-size:16px;font-weight:700">🚌 מלווי הסעות – ${dateLabel}</h2>
       <button id="closeModal" style="background:none;border:none;font-size:19px;cursor:pointer">✕</button>
     </div>
-    <datalist id="escStaffList">${staffMembers.map(m=>`<option value="${m}">`).join("")}</datalist>
+
     ${timeBlocks}
     <div style="display:flex;gap:7px;padding-top:12px;border-top:1px solid #f0f0f0">
       <button id="saveEsc" class="btn" style="flex:1;background:${house.color};color:#fff">שמור</button>
