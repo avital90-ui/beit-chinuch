@@ -36,7 +36,7 @@ import{getFirestore,doc,getDoc,setDoc,onSnapshot,deleteDoc}from"https://www.gsta
 import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const FB={apiKey:"AIzaSyDV7u3dnHUclp7VQ_izZ_LRuH02pqw6R28",authDomain:"budget-hbf.firebaseapp.com",projectId:"budget-hbf",storageBucket:"budget-hbf.firebasestorage.app",messagingSenderId:"761041284613",appId:"1:761041284613:web:cd2204f98dbb9ee3c8366c"};
-const db=getFirestore(initializeApp(FB));
+const app=initializeApp(FB),db=getFirestore(app),auth=getAuth(app);
 
 // ── CONSTANTS ───────────────────────────────────────────────
 const HOUSES=[{id:"chatzav",name:"חצב",color:"#2D6A4F",accent:"#52B788",bg:"#D8F3DC",ageGroup:"6-9"},{id:"shibbolet",name:"שיבולת",color:"#7B2D8B",accent:"#C77DFF",bg:"#F3D8FF",ageGroup:"9-12"},{id:"neorim",name:"נעורים",color:"#C77B2B",accent:"#F4A261",bg:"#FFF3D8",ageGroup:"12-18"}];
@@ -93,7 +93,7 @@ function renderLogin(){
         <input id="lU" type="email" placeholder="הכנס אימייל" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;font-size:13px;outline:none;box-sizing:border-box"/></div>
       <div style="margin-bottom:18px"><label style="color:rgba(255,255,255,.7);font-size:12px;font-weight:600;display:block;margin-bottom:4px">סיסמה</label>
         <div style="position:relative">
-          <input id="lP" type="password" placeholder="הכנס סיסמה" style="width:100%;padding:10px 38px 10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;font-size:13px;outline:none;box-sizing:border-box"/>
+          <input id="lP" type="password" placeholder="הכנס סיסמה" autocomplete="new-password" style="width:100%;padding:10px 38px 10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;font-size:13px;outline:none;box-sizing:border-box"/>
           <button id="tP" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.5);font-size:15px">👁</button></div></div>
       <div id="lE" style="display:none;background:rgba(255,80,80,.15);border:1px solid rgba(255,80,80,.3);border-radius:7px;padding:8px 12px;color:#ff6b6b;font-size:12px;margin-bottom:12px;text-align:center"></div>
       <button id="lB" style="width:100%;padding:12px;border-radius:9px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-size:14px;font-weight:700;cursor:pointer">כניסה למערכת</button>
