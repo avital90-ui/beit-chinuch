@@ -33,6 +33,7 @@ input,select,textarea,button{font-family:'Heebo',sans-serif}
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import{getFirestore,doc,getDoc,setDoc,onSnapshot,deleteDoc}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const FB={apiKey:"AIzaSyDV7u3dnHUclp7VQ_izZ_LRuH02pqw6R28",authDomain:"budget-hbf.firebaseapp.com",projectId:"budget-hbf",storageBucket:"budget-hbf.firebasestorage.app",messagingSenderId:"761041284613",appId:"1:761041284613:web:cd2204f98dbb9ee3c8366c"};
 const db=getFirestore(initializeApp(FB));
@@ -40,7 +41,7 @@ const db=getFirestore(initializeApp(FB));
 // ── CONSTANTS ───────────────────────────────────────────────
 const HOUSES=[{id:"chatzav",name:"חצב",color:"#2D6A4F",accent:"#52B788",bg:"#D8F3DC",ageGroup:"6-9"},{id:"shibbolet",name:"שיבולת",color:"#7B2D8B",accent:"#C77DFF",bg:"#F3D8FF",ageGroup:"9-12"},{id:"neorim",name:"נעורים",color:"#C77B2B",accent:"#F4A261",bg:"#FFF3D8",ageGroup:"12-18"}];
 const CATS=[{id:"kaytan",name:"פעילויות (קייטנה)",icon:"🏕️"},{id:"kolbo",name:"כולבו",icon:"🛒"},{id:"hadar_ochel",name:"חדר אוכל",icon:"🍽️"},{id:"yetzirah",name:"ציוד יצירה",icon:"🎨"},{id:"nesiot",name:"נסיעות",icon:"🚌"},{id:"kvisa",name:"כביסה",icon:"👕"},{id:"shonim",name:"שונות",icon:"📦"}];
-const USERS=[{id:"manager",name:"מנהל",role:"manager",password:"manager123",house:null},{id:"chatzav_staff",name:"צוות חצב",role:"staff",password:"chatzav123",house:"chatzav"},{id:"shibbolet_staff",name:"צוות שיבולת",role:"staff",password:"shibbolet123",house:"shibbolet"},{id:"neorim_staff",name:"צוות נעורים",role:"staff",password:"neorim123",house:"neorim"}];
+const EMAIL_MAP={"manager@shamir.org.il":{id:"manager",name:"מנהל",role:"manager",house:null},"chatzav@shamir.org.il":{id:"chatzav_staff",name:"צוות חצב",role:"staff",house:"chatzav"},"shibbolet@shamir.org.il":{id:"shibbolet_staff",name:"צוות שיבולת",role:"staff",house:"shibbolet"},"neorim.shamir@gmail.com":{id:"neorim_staff",name:"צוות נעורים",role:"staff",house:"neorim"}};
 const MONTHS=["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
 const DAYS=["ראשון","שני","שלישי","רביעי","חמישי","שישי"];
 const ABSENCE_REASONS=["לא נמצא","מחלה","אחר"];
@@ -88,28 +89,35 @@ function renderLogin(){
       <div style="text-align:center;margin-bottom:30px"><div style="font-size:44px;margin-bottom:10px">🏡</div>
         <h1 style="color:#fff;font-size:23px;font-weight:800;margin:0">מערכת ניהול</h1>
         <p style="color:rgba(255,255,255,.5);font-size:12px;margin-top:5px">חצב · שיבולת · נעורים</p></div>
-      <div style="margin-bottom:13px"><label style="color:rgba(255,255,255,.7);font-size:12px;font-weight:600;display:block;margin-bottom:4px">שם משתמש</label>
-        <select id="lU" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;font-size:13px;outline:none">
-          <option value="">בחר משתמש...</option>${USERS.map(u=>`<option value="${u.id}" style="background:#1a1a2e">${u.name}</option>`).join("")}
-        </select></div>
+      <div style="margin-bottom:13px"><label style="color:rgba(255,255,255,.7);font-size:12px;font-weight:600;display:block;margin-bottom:4px">אימייל</label>
+        <input id="lU" type="email" placeholder="הכנס אימייל" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;font-size:13px;outline:none;box-sizing:border-box"/></div>
       <div style="margin-bottom:18px"><label style="color:rgba(255,255,255,.7);font-size:12px;font-weight:600;display:block;margin-bottom:4px">סיסמה</label>
         <div style="position:relative">
           <input id="lP" type="password" placeholder="הכנס סיסמה" style="width:100%;padding:10px 38px 10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;font-size:13px;outline:none;box-sizing:border-box"/>
           <button id="tP" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.5);font-size:15px">👁</button></div></div>
       <div id="lE" style="display:none;background:rgba(255,80,80,.15);border:1px solid rgba(255,80,80,.3);border-radius:7px;padding:8px 12px;color:#ff6b6b;font-size:12px;margin-bottom:12px;text-align:center"></div>
       <button id="lB" style="width:100%;padding:12px;border-radius:9px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-size:14px;font-weight:700;cursor:pointer">כניסה למערכת</button>
-
     </div></div>`;
   document.getElementById("lP").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin()});
+  document.getElementById("lU").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin()});
   document.getElementById("lB").addEventListener("click",doLogin);
   document.getElementById("tP").addEventListener("click",()=>{const i=document.getElementById("lP");i.type=i.type==="password"?"text":"password"});
 }
 
 async function doLogin(){
-  const uid=document.getElementById("lU").value,pass=document.getElementById("lP").value;
-  const user=USERS.find(u=>u.id===uid&&u.password===pass);
-  if(!user){const e=document.getElementById("lE");e.textContent="שם משתמש או סיסמה שגויים";e.style.display="block";return}
-  CU=user;
+  const email=document.getElementById("lU").value.trim(),pass=document.getElementById("lP").value;
+  const errEl=document.getElementById("lE");
+  errEl.style.display="none";
+  if(!email||!pass){errEl.textContent="נא למלא אימייל וסיסמה";errEl.style.display="block";return}
+  try{
+    await signInWithEmailAndPassword(auth,email,pass);
+  }catch(e){
+    errEl.textContent="אימייל או סיסמה שגויים";errEl.style.display="block";return;
+  }
+  const fbUser=auth.currentUser;
+  const mapped=EMAIL_MAP[fbUser.email];
+  if(!mapped){errEl.textContent="משתמש לא מורשה";errEl.style.display="block";await signOut(auth);return}
+  CU=mapped;
   document.getElementById("app").innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f4f5f9;flex-direction:column;gap:12px"><div style="font-size:32px;animation:spin 1s linear infinite">⏳</div><p style="color:#888;font-size:14px">מתחבר...</p></div>`;
   for(const h of HOUSES){
     if(!HD[h.id])HD[h.id]={};
@@ -129,19 +137,22 @@ async function doLogin(){
 function renderShell(){
   const acc=CU.role==="manager"?HOUSES:HOUSES.filter(h=>h.id===CU.house);
   document.getElementById("app").innerHTML=`
-  <div id="nav" style="background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.07);padding:0 16px;display:flex;align-items:center;gap:7px;height:55px;position:sticky;top:0;z-index:100;flex-wrap:wrap">
-    <span style="font-size:19px">🏡</span><span style="font-weight:800;font-size:14px;color:#333">מערכת ניהול</span>
-    <div style="flex:1;display:flex;justify-content:center;gap:4px;flex-wrap:wrap" id="hTabs"></div>
+  <div id="nav" style="background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.07);padding:0 16px;display:flex;align-items:center;gap:7px;height:50px;position:sticky;top:0;z-index:100">
+    <span style="font-size:18px">🏡</span><span style="font-weight:800;font-size:14px;color:#333">מערכת ניהול</span>
+    <div style="flex:1"></div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:11px;color:#999">${CU.name}</span>
       ${CU.role==="manager"?'<span class="tag" style="background:#667eea22;color:#667eea">מנהל</span>':""}
       <button id="logoutBtn" class="btn" style="padding:4px 10px;border:1.5px solid #eee;background:#fff;color:#666;font-size:11px">יציאה</button>
-    </div></div>
+    </div>
+  </div>
+  <div style="background:#fff;border-bottom:2px solid #f0f0f0;padding:6px 16px;display:flex;gap:6px;overflow-x:auto;align-items:center" id="hTabs"></div>
   <div style="background:#fff;border-bottom:1px solid #eee;padding:0 16px;display:flex;gap:2px;overflow-x:auto" id="mTabs">
     <button class="mtab" data-m="budget" style="padding:9px 13px;border:none;background:none;cursor:pointer;font-size:12px;font-weight:700;border-bottom:3px solid transparent;color:#888;white-space:nowrap">💰 תקציב</button>
     <button class="mtab" data-m="staff"  style="padding:9px 13px;border:none;background:none;cursor:pointer;font-size:12px;font-weight:700;border-bottom:3px solid transparent;color:#888;white-space:nowrap">👥 כח אדם</button>
     <button class="mtab" data-m="att"    style="padding:9px 13px;border:none;background:none;cursor:pointer;font-size:12px;font-weight:700;border-bottom:3px solid transparent;color:#888;white-space:nowrap">✅ נוכחות</button>
     <button class="mtab" data-m="acts"   style="padding:9px 13px;border:none;background:none;cursor:pointer;font-size:12px;font-weight:700;border-bottom:3px solid transparent;color:#888;white-space:nowrap">🎯 פעילויות</button>
+    <button class="mtab" data-m="cal"    style="padding:9px 13px;border:none;background:none;cursor:pointer;font-size:12px;font-weight:700;border-bottom:3px solid transparent;color:#888;white-space:nowrap">📅 לוח שנה</button>
     <button class="mtab" data-m="escort" style="padding:9px 13px;border:none;background:none;cursor:pointer;font-size:12px;font-weight:700;border-bottom:3px solid transparent;color:#888;white-space:nowrap">🚌 הסעות</button>
   </div>
   <div style="padding:18px 16px 60px;max-width:980px;margin:0 auto" id="main"></div>`;
@@ -154,7 +165,7 @@ function renderShell(){
 }
 function updHT(){document.querySelectorAll("#hTabs button").forEach(b=>{const h=hById(b.dataset.hid);b.style.background=b.dataset.hid===AH?h.color:"#f0f0f0";b.style.color=b.dataset.hid===AH?"#fff":"#555"})}
 function updMT(){const h=hById(AH);document.querySelectorAll(".mtab").forEach(b=>{const a=b.dataset.m===MOD;b.style.borderBottomColor=a?(h?.color||"#667eea"):"transparent";b.style.color=a?"#333":"#888"})}
-function renderMain(){updMT();updHT();if(MOD==="budget")renderBudget();else if(MOD==="staff")renderStaff();else if(MOD==="att")renderAtt();else if(MOD==="escort")renderEscort();else renderActs()}
+function renderMain(){updMT();updHT();if(MOD==="budget")renderBudget();else if(MOD==="staff")renderStaff();else if(MOD==="att")renderAtt();else if(MOD==="escort")renderEscort();else if(MOD==="cal")renderCal();else renderActs()}
 
 // ══════════════════════════════════════════════════════════════
 //  BUDGET MODULE
@@ -244,60 +255,104 @@ function renderBudget(){
   document.querySelectorAll(".rBtn").forEach(b=>b.addEventListener("click",()=>{const exp=(BD(AH).expenses||[]).find(e=>String(e.id)===b.dataset.id);if(exp?.receipt)openModal(`<div style="display:flex;justify-content:space-between;margin-bottom:12px"><h3 style="margin:0;font-size:15px">קבלה</h3><button id="closeModal" style="background:none;border:none;font-size:19px;cursor:pointer">✕</button></div><img src="${exp.receipt}" style="max-width:100%;border-radius:8px"/>`,()=>document.getElementById("closeModal").addEventListener("click",closeModal))}));
 }
 
-// ── BUDGET MODAL (monthly split + category) ──────────────────
+// ── BUDGET MODAL (per-category monthly breakdown) ──────────────
 function openBudgetModal(){
-  const house=hById(AH),data=BD(AH),cb=data.categoryBudgets||{},mb=data.monthlyBudgets||{};
+  const house=hById(AH),data=BD(AH),cb=data.categoryBudgets||{};
   const yr=AM.split("-")[0];
+  // Active category for editing
+  let activeCat=CATS[0].id;
+
+  function buildCatPanel(catId){
+    const cat=CATS.find(c=>c.id===catId);
+    const cc=cb[catId]||{annual:0,monthly:{}};
+    const annualBudget=cc.annual||0;
+    const monthlyData=cc.monthly||{};
+    const monthlySum=Object.values(monthlyData).reduce((s,v)=>s+(+v||0),0);
+    const remaining=annualBudget-monthlySum;
+    return`<div id="catPanel">
+      <div style="background:${house.bg};border-radius:10px;padding:12px 14px;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:800;color:${house.color};margin-bottom:8px">${cat.icon} ${cat.name}</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="flex:1"><label style="font-size:10px;font-weight:700;color:#888;display:block;margin-bottom:3px">תקציב שנתי כולל (₪)</label>
+            <input type="number" id="annualInp" value="${annualBudget||""}" placeholder="0" class="input" style="padding:8px 10px;font-size:14px;font-weight:700"/></div>
+          <div style="text-align:center;padding-top:16px">
+            <div style="font-size:10px;color:#888">נותר לחלוקה</div>
+            <div id="remainDisp" style="font-size:16px;font-weight:800;color:${remaining>=0?house.color:"#dc2626"}">₪${remaining.toLocaleString("he-IL")}</div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:#666;margin-bottom:8px">חלוקה חודשית — ${yr}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        ${Array.from({length:12},(_,i)=>{
+          const k=`${yr}-${String(i+1).padStart(2,"0")}`;
+          const v=monthlyData[k]||"";
+          return`<div style="padding:7px 9px;background:#fafafa;border-radius:8px;border:1.5px solid #eee">
+            <label style="font-size:10px;font-weight:700;color:#666;display:block;margin-bottom:3px">${MONTHS[i]}</label>
+            <input type="number" class="input mMI" data-key="${k}" value="${v}" placeholder="0" style="padding:5px 7px;font-size:12px"/>
+          </div>`;
+        }).join("")}
+      </div>
+      <div style="margin-top:10px;padding:8px 12px;background:#f9fafb;border-radius:8px;display:flex;justify-content:space-between">
+        <span style="font-size:11px;color:#888">סה"כ חודשי מוקצב:</span>
+        <span id="mSum" style="font-size:13px;font-weight:800;color:${house.color}">₪${monthlySum.toLocaleString("he-IL")}</span>
+      </div>
+    </div>`;
+  }
+
+  const catBtns=CATS.map(cat=>`<button class="cbtn btn" data-cid="${cat.id}" style="padding:6px 12px;font-size:12px;background:${activeCat===cat.id?house.color:"#f0f0f0"};color:${activeCat===cat.id?"#fff":"#555"};white-space:nowrap">${cat.icon} ${cat.name}</button>`).join("");
+
   openModal(`
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h2 style="margin:0;font-size:16px;font-weight:700">⚙️ הגדרת תקציב – ${house.name}</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h2 style="margin:0;font-size:16px;font-weight:700">⚙️ תקציב – ${house.name}</h2>
       <button id="closeModal" style="background:none;border:none;font-size:19px;cursor:pointer">✕</button>
     </div>
-    <div style="display:flex;gap:5px;margin-bottom:16px">
-      <button class="btab btn" data-tab="m" style="flex:1;background:${house.color};color:#fff;font-size:12px">📅 חלוקה חודשית</button>
-      <button class="btab btn" data-tab="c" style="flex:1;background:#f0f0f0;color:#555;font-size:12px">🗂️ לפי קטגוריה</button>
-    </div>
-    <div id="pM">
-      <p style="font-size:11px;color:#888;margin-bottom:10px">הגדר תקציב לכל חודש בשנת ${yr} — הסכום השנתי יחושב אוטומטית</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px">
-        ${Array.from({length:12},(_,i)=>{const k=`${yr}-${String(i+1).padStart(2,"0")}`;return`<div style="padding:8px 10px;background:#fafafa;border-radius:8px;border:1.5px solid #eee"><label style="font-size:10px;font-weight:700;color:#666;display:block;margin-bottom:3px">${MONTHS[i]}</label><input type="number" class="input mBI" data-key="${k}" value="${mb[k]||""}" placeholder="0" style="padding:5px 7px;font-size:12px"/></div>`}).join("")}
-      </div>
-      <div style="background:${house.bg};border-radius:9px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:12px;font-weight:700;color:${house.color}">סה"כ שנתי:</span>
-        <span id="aSum" style="font-size:17px;font-weight:800;color:${house.color}">₪${Object.values(mb).reduce((s,v)=>s+(+v||0),0).toLocaleString("he-IL")}</span>
-      </div>
-    </div>
-    <div id="pC" style="display:none">
-      <p style="font-size:11px;color:#888;margin-bottom:10px">תקציב לכל קטגוריה</p>
-      ${CATS.map(cat=>`<div style="margin-bottom:8px;padding:10px 12px;background:#fafafa;border-radius:9px;border:1.5px solid #f0f0f0">
-        <div style="font-weight:700;font-size:12px;margin-bottom:7px">${cat.icon} ${cat.name}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
-          <div><label style="font-size:10px;font-weight:600;color:#888;display:block;margin-bottom:2px">חודשי (₪)</label><input type="number" data-cat="${cat.id}" data-f="monthly" value="${cb[cat.id]?.monthly||""}" placeholder="0" class="input catI" style="padding:6px 8px;font-size:12px"/></div>
-          <div><label style="font-size:10px;font-weight:600;color:#888;display:block;margin-bottom:2px">שנתי (₪)</label><input type="number" data-cat="${cat.id}" data-f="annual" value="${cb[cat.id]?.annual||""}" placeholder="0" class="input catI" style="padding:6px 8px;font-size:12px"/></div>
-        </div></div>`).join("")}
-    </div>
-    <div style="display:flex;gap:7px;margin-top:16px;padding-top:12px;border-top:1px solid #f0f0f0">
-      <button id="saveBB" class="btn" style="flex:1;background:${house.color};color:#fff">שמור הכל</button>
+    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px" id="catBtns">${catBtns}</div>
+    <div id="catPanel">${buildCatPanel(activeCat)}</div>
+    <div style="display:flex;gap:7px;margin-top:14px;padding-top:12px;border-top:1px solid #f0f0f0">
+      <button id="saveBB" class="btn" style="flex:1;background:${house.color};color:#fff">שמור</button>
       <button id="cancelBB" class="btn" style="border:1.5px solid #ddd;background:#fff;color:#666">ביטול</button>
     </div>`,()=>{
     document.getElementById("closeModal").addEventListener("click",closeModal);
     document.getElementById("cancelBB").addEventListener("click",closeModal);
-    document.querySelectorAll(".mBI").forEach(inp=>inp.addEventListener("input",()=>{
-      const t=Array.from(document.querySelectorAll(".mBI")).reduce((s,i)=>s+(+i.value||0),0);
-      document.getElementById("aSum").textContent="₪"+t.toLocaleString("he-IL");
-    }));
-    document.querySelectorAll(".btab").forEach(btn=>btn.addEventListener("click",()=>{
-      document.querySelectorAll(".btab").forEach(b=>{b.style.background="#f0f0f0";b.style.color="#555"});
+
+    function recalc(){
+      const annual=+document.getElementById("annualInp")?.value||0;
+      const ms=Array.from(document.querySelectorAll(".mMI")).reduce((s,i)=>s+(+i.value||0),0);
+      const rem=annual-ms;
+      const rd=document.getElementById("remainDisp");
+      const msd=document.getElementById("mSum");
+      if(rd){rd.textContent="₪"+rem.toLocaleString("he-IL");rd.style.color=rem>=0?hById(AH).color:"#dc2626";}
+      if(msd)msd.textContent="₪"+ms.toLocaleString("he-IL");
+    }
+    document.addEventListener("input",e=>{if(e.target.classList.contains("mMI")||e.target.id==="annualInp")recalc()});
+
+    function saveCurrentCat(){
+      const annual=+document.getElementById("annualInp")?.value||0;
+      const monthly={};
+      document.querySelectorAll(".mMI").forEach(i=>{const v=+i.value||0;if(v>0)monthly[i.dataset.key]=v});
+      if(!cb[activeCat])cb[activeCat]={};
+      cb[activeCat]={annual,monthly};
+    }
+
+    document.querySelectorAll(".cbtn").forEach(btn=>btn.addEventListener("click",()=>{
+      saveCurrentCat();
+      activeCat=btn.dataset.cid;
+      document.querySelectorAll(".cbtn").forEach(b=>{b.style.background="#f0f0f0";b.style.color="#555"});
       btn.style.background=hById(AH).color;btn.style.color="#fff";
-      document.getElementById("pM").style.display=btn.dataset.tab==="m"?"block":"none";
-      document.getElementById("pC").style.display=btn.dataset.tab==="c"?"block":"none";
+      document.getElementById("catPanel").innerHTML=buildCatPanel(activeCat);
     }));
+
     document.getElementById("saveBB").addEventListener("click",async()=>{
-      const newMb={};document.querySelectorAll(".mBI").forEach(i=>{const v=+i.value||0;if(v>0)newMb[i.dataset.key]=v});
-      const newCb={};document.querySelectorAll(".catI").forEach(i=>{const cid=i.dataset.cat,f=i.dataset.f;if(!newCb[cid])newCb[cid]={monthly:0,annual:0};newCb[cid][f]=+i.value||0});
-      const annualBudget=Object.values(newMb).reduce((s,v)=>s+(+v||0),0);
-      const monthlyBudget=newMb[AM]||0;
-      await saveBudget(AH,{...BD(AH),monthlyBudget,annualBudget,monthlyBudgets:newMb,categoryBudgets:newCb});
+      saveCurrentCat();
+      // compute legacy fields for backward compat
+      const allMonthly={};
+      CATS.forEach(cat=>{
+        const cm=cb[cat.id]?.monthly||{};
+        Object.entries(cm).forEach(([k,v])=>{allMonthly[k]=(allMonthly[k]||0)+(+v||0)});
+      });
+      const annualBudget=CATS.reduce((s,cat)=>s+(cb[cat.id]?.annual||0),0);
+      const monthlyBudget=allMonthly[AM]||0;
+      await saveBudget(AH,{...BD(AH),monthlyBudget,annualBudget,monthlyBudgets:allMonthly,categoryBudgets:cb});
       closeModal();showToast("התקציב עודכן ✓");renderBudget();
     });
   });
@@ -1088,6 +1143,223 @@ function openEscortModal(date){
 
 // ── BOOT ─────────────────────────────────────────────────────
 renderLogin();
+
+// ══════════════════════════════════════════════════════════════
+//  CALENDAR MODULE
+// ══════════════════════════════════════════════════════════════
+function renderCal(){
+  const house=hById(AH);
+  const [yr,mo]=AM.split("-").map(Number);
+  const firstDay=new Date(yr,mo-1,1);
+  const lastDay=new Date(yr,mo,0);
+  const startDow=firstDay.getDay(); // 0=Sun
+  const daysInMonth=lastDay.getDate();
+
+  const data=HD[AH]||{};
+  const sched=(data.acts?.schedule)||{};
+  const shifts=(data.staff?.shifts)||{};
+  const escAssign=(data.escort?.assignments)||{};
+
+  // Build calendar grid (Sun-Sat, Hebrew style)
+  const DOW_HE=["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"];
+  let cells=[];
+  for(let i=0;i<startDow;i++)cells.push(null);
+  for(let d=1;d<=daysInMonth;d++)cells.push(d);
+  while(cells.length%7!==0)cells.push(null);
+
+  const today=new Date();
+  const todayStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+
+  const rows=[];
+  for(let r=0;r<cells.length/7;r++){
+    const rowCells=cells.slice(r*7,(r+1)*7).map((d,i)=>{
+      if(!d)return`<td style="border:1px solid #f0f0f0;background:#fafafa;min-height:70px"></td>`;
+      const dateStr=`${yr}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const isToday=dateStr===todayStr;
+      const isSat=i===6;
+      const hasSched=(sched[dateStr]||[]).length>0;
+      const hasStaff=Object.keys(shifts).some(k=>k.startsWith(dateStr));
+      const hasEsc=Object.keys(escAssign).some(k=>k.startsWith(dateStr));
+      const dots=[hasSched?"🎯":"",hasStaff?"👥":"",hasEsc?"🚌":""].filter(Boolean).join("");
+      return`<td onclick="openCalDay('${dateStr}')" style="border:1px solid #f0f0f0;min-height:70px;padding:4px;cursor:pointer;vertical-align:top;background:${isToday?house.bg:"#fff"};transition:background .15s" onmouseenter="this.style.background='${house.bg}'" onmouseleave="this.style.background='${isToday?house.bg:"#fff"}'">
+        <div style="font-size:13px;font-weight:${isToday?"800":"600"};color:${isSat?"#e53e3e":isToday?house.color:"#333"};width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:${isToday?house.color:"none"};color:${isToday?"#fff":isSat?"#e53e3e":"#333"}">${d}</div>
+        <div style="font-size:10px;margin-top:3px;line-height:1.4">${dots}</div>
+      </td>`;
+    }).join("");
+    rows.push(`<tr>${rowCells}</tr>`);
+  }
+
+  const headerRow=DOW_HE.map((d,i)=>`<th style="padding:6px 2px;font-size:11px;font-weight:700;color:${i===6?"#e53e3e":"#888"};text-align:center;border-bottom:2px solid #f0f0f0">${d}</th>`).join("");
+
+  document.getElementById("main").innerHTML=`
+    <div style="background:linear-gradient(135deg,${house.color},${house.accent});border-radius:18px;padding:20px 24px;margin-bottom:16px;color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:9px">
+      <div><h1 style="margin:0;font-size:22px;font-weight:800">בית ${house.name}</h1><p style="margin:2px 0 0;opacity:.8;font-size:12px">לוח שנה</p></div>
+    </div>
+    <div class="card" style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:10px 16px">
+      <button id="prevMC" style="background:none;border:none;font-size:16px;cursor:pointer;color:${house.color}">◀</button>
+      <span style="font-weight:700;font-size:15px;flex:1;text-align:center">${mLabel(AM)}</span>
+      <button id="nextMC" style="background:none;border:none;font-size:16px;cursor:pointer;color:${house.color}">▶</button>
+    </div>
+    <div class="card" style="padding:8px;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:280px">
+        <thead><tr>${headerRow}</tr></thead>
+        <tbody>${rows.join("")}</tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:10px;font-size:11px;color:#888;padding:0 4px">
+      <span>🎯 פעילות</span><span>👥 כח אדם</span><span>🚌 הסעות</span>
+    </div>`;
+
+  document.getElementById("prevMC")?.addEventListener("click",()=>{const[y,m]=AM.split("-").map(Number);const d=new Date(y,m-2,1);AM=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;renderCal()});
+  document.getElementById("nextMC")?.addEventListener("click",()=>{const[y,m]=AM.split("-").map(Number);const d=new Date(y,m,1);AM=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;renderCal()});
+}
+
+window.openCalDay=function(dateStr){
+  const house=hById(AH);
+  const data=HD[AH]||{};
+  const acts=data.acts?.activities||[];
+  const sched=data.acts?.schedule||{};
+  const members=data.staff?.members||[];
+  const shifts=data.staff?.shifts||{};
+  const escAssign=data.escort?.assignments||{};
+
+  const dayActs=(sched[dateStr]||[]).map(id=>acts.find(a=>a.id===id)).filter(Boolean);
+  const dayShifts=shifts[dateStr]||{};
+  const escSlots=["אגד להבות","אגד הרחבה","איסוף"];
+  const escTimes=["בוקר","צהריים"];
+
+  const d=new Date(dateStr+"T00:00:00");
+  const dow=["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"][d.getDay()];
+  const [dy,dm,dd]=dateStr.split("-");
+  const label=`יום ${dow}, ${dd}/${dm}/${dy}`;
+
+  const actRows=dayActs.map(a=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:${a.color||house.color}15;border-radius:8px;margin-bottom:5px">
+    <span style="font-size:13px;font-weight:700;color:${a.color||house.color};flex:1">${a.name}</span>
+    <span style="font-size:11px;color:#888">${a.duration||""}</span>
+    <button class="rmActSched btn" data-date="${dateStr}" data-id="${a.id}" style="background:none;border:none;color:#ddd;font-size:12px;padding:1px">✕</button>
+  </div>`).join("");
+
+  const staffRows=members.map(m=>{
+    const curShift=Object.entries(dayShifts).find(([,v])=>v===m)?.[0]||"";
+    return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <span style="font-size:12px;flex:1;font-weight:600">${m}</span>
+      <select class="input staffShiftSel" data-member="${m}" data-date="${dateStr}" style="font-size:11px;padding:4px 6px;width:110px">
+        <option value="">— ללא —</option>
+        <option value="בוקר" ${curShift==="בוקר"?"selected":""}>🌅 בוקר</option>
+        <option value="צהריים" ${curShift==="צהריים"?"selected":""}>🌤️ צהריים</option>
+        <option value="ערב" ${curShift==="ערב"?"selected":""}>🌙 ערב</option>
+        <option value="חופש" ${curShift==="חופש"?"selected":""}>🏖️ חופש</option>
+        <option value="מחלה" ${curShift==="מחלה"?"selected":""}>🤒 מחלה</option>
+      </select>
+    </div>`;
+  }).join("");
+
+  const escRows=escTimes.map(time=>`<div style="margin-bottom:10px">
+    <div style="font-size:11px;font-weight:700;color:${time==="בוקר"?"#667eea":"#f59e0b"};margin-bottom:5px">${time==="בוקר"?"🌅":"🌤️"} ${time}</div>
+    ${escSlots.map(slot=>{
+      const key=`${dateStr}_${time}_${slot}`;
+      const val=escAssign[key]||"";
+      const opts=members.map(m=>`<option value="${m}" ${val===m?"selected":""}>${m}</option>`).join("");
+      return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+        <span style="font-size:11px;color:#666;width:80px">${slot}</span>
+        <select class="input escDaySel" data-key="${key}" style="flex:1;font-size:11px;padding:4px 6px">
+          <option value="">— פנוי —</option>${opts}
+        </select>
+      </div>`;
+    }).join("")}
+  </div>`).join("");
+
+  openModal(`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h2 style="margin:0;font-size:15px;font-weight:800">${label}</h2>
+      <button id="closeModal" style="background:none;border:none;font-size:19px;cursor:pointer">✕</button>
+    </div>
+
+    <div style="background:${house.bg};border-radius:10px;padding:12px 14px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700;color:${house.color}">🎯 פעילויות</div>
+        <button id="addActCalBtn" class="btn" style="padding:4px 10px;background:${house.color};color:#fff;font-size:11px">+ הוסף</button>
+      </div>
+      <div id="actsList">${actRows||'<div style="font-size:12px;color:#bbb;text-align:center;padding:8px">אין פעילויות ליום זה</div>'}</div>
+    </div>
+
+    <div style="background:#f0fdf4;border-radius:10px;padding:12px 14px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;color:#16a34a;margin-bottom:8px">👥 כח אדם</div>
+      ${staffRows||'<div style="font-size:12px;color:#bbb">אין עובדים רשומים</div>'}
+    </div>
+
+    <div style="background:#fffbeb;border-radius:10px;padding:12px 14px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;color:#d97706;margin-bottom:8px">🚌 הסעות</div>
+      ${escRows||'<div style="font-size:12px;color:#bbb">אין מלווים</div>'}
+    </div>
+
+    <div style="display:flex;gap:7px">
+      <button id="saveCalDay" class="btn" style="flex:1;background:${house.color};color:#fff">שמור</button>
+      <button id="cancelCalDay" class="btn" style="border:1.5px solid #ddd;background:#fff;color:#666">ביטול</button>
+    </div>`,()=>{
+    document.getElementById("closeModal").addEventListener("click",closeModal);
+    document.getElementById("cancelCalDay").addEventListener("click",closeModal);
+
+    document.getElementById("addActCalBtn").addEventListener("click",()=>{
+      // Open activity picker from bank
+      const acts2=HD[AH]?.acts?.activities||[];
+      if(acts2.length===0){showToast("אין פעילויות בבנק — הוסף קודם מהמודול פעילויות","error");return;}
+      const opts=acts2.map(a=>`<div class="pickAct btn" data-id="${a.id}" style="padding:8px 12px;background:${a.color||house.color}15;border-radius:8px;margin-bottom:5px;cursor:pointer;border:1.5px solid ${a.color||house.color}33">
+        <div style="font-weight:700;font-size:12px;color:${a.color||house.color}">${a.name}</div>
+        <div style="font-size:10px;color:#888">${a.duration||""} ${a.description?.substring(0,50)||""}</div>
+      </div>`).join("");
+      const overlay=document.createElement("div");
+      overlay.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;display:flex;align-items:center;justify-content:center;padding:16px";
+      overlay.innerHTML=`<div style="background:#fff;border-radius:16px;padding:20px;width:100%;max-width:400px;max-height:80vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px"><h3 style="margin:0;font-size:14px">בחר פעילות מהבנק</h3><button id="closePickAct" style="background:none;border:none;font-size:18px;cursor:pointer">✕</button></div>
+        ${opts}
+      </div>`;
+      document.body.appendChild(overlay);
+      overlay.querySelector("#closePickAct").addEventListener("click",()=>overlay.remove());
+      overlay.querySelectorAll(".pickAct").forEach(btn=>btn.addEventListener("click",async()=>{
+        const aid=btn.dataset.id;
+        const curSched=HD[AH]?.acts?.schedule||{};
+        const dayList=curSched[dateStr]||[];
+        if(!dayList.includes(aid)){
+          const newSched={...curSched,[dateStr]:[...dayList,aid]};
+          await saveActs(AH,{...HD[AH].acts,schedule:newSched});
+        }
+        overlay.remove();
+        openCalDay(dateStr);
+      }));
+    });
+
+    document.querySelectorAll(".rmActSched").forEach(btn=>btn.addEventListener("click",async()=>{
+      const curSched=HD[AH]?.acts?.schedule||{};
+      const dayList=(curSched[dateStr]||[]).filter(id=>id!==btn.dataset.id);
+      await saveActs(AH,{...HD[AH].acts,schedule:{...curSched,[dateStr]:dayList}});
+      openCalDay(dateStr);
+    }));
+
+    document.getElementById("saveCalDay").addEventListener("click",async()=>{
+      // Save staff shifts
+      const curShifts={...HD[AH]?.staff?.shifts||{}};
+      const dayShifts2={};
+      document.querySelectorAll(".staffShiftSel").forEach(sel=>{
+        if(sel.value)dayShifts2[sel.value]=sel.dataset.member;
+      });
+      if(Object.keys(dayShifts2).length>0)curShifts[dateStr]=dayShifts2;
+      else delete curShifts[dateStr];
+      await saveStaff(AH,{...HD[AH].staff,shifts:curShifts});
+
+      // Save escort
+      const curEsc={...HD[AH]?.escort?.assignments||{}};
+      document.querySelectorAll(".escDaySel").forEach(sel=>{
+        if(sel.value)curEsc[sel.dataset.key]=sel.value;
+        else delete curEsc[sel.dataset.key];
+      });
+      await saveEscort(AH,{...HD[AH].escort,assignments:curEsc});
+
+      closeModal();showToast("נשמר ✓");renderCal();
+    });
+  });
+};
+
 </script>
 </body>
 </html>
